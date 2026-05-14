@@ -1,16 +1,31 @@
 "use client";
 
-import React from 'react';
-import { FolderGit2, CheckSquare, Clock, AlertCircle, TrendingUp, Users, Loader2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState, useEffect } from 'react';
+import { 
+  FolderGit2, 
+  CheckSquare, 
+  Clock, 
+  AlertCircle, 
+  TrendingUp, 
+  Users, 
+  Loader2, 
+  BarChart3, 
+  PieChart, 
+  ArrowUpRight, 
+  ArrowDownRight,
+  Activity,
+  DollarSign
+} from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { api } from '@/lib/api';
 
 export default function DashboardPage() {
-  const [projectsCount, setProjectsCount] = React.useState(0);
-  const [tasksCount, setTasksCount] = React.useState(0);
-  const [isLoading, setIsLoading] = React.useState(true);
+  const [projectsCount, setProjectsCount] = useState(0);
+  const [tasksCount, setTasksCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const loadData = async () => {
       try {
         const projects = await api.projects.list();
@@ -32,88 +47,200 @@ export default function DashboardPage() {
   }, []);
 
   const stats = [
-    { name: 'Active Projects', value: projectsCount > 0 ? projectsCount.toString() : '12', icon: FolderGit2, color: 'text-blue-600', bg: 'bg-blue-100' },
-    { name: 'Total Tasks', value: tasksCount > 0 ? tasksCount.toString() : '8', icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-100' },
-    { name: 'Hours Logged (Week)', value: '164h', icon: Clock, color: 'text-purple-600', bg: 'bg-purple-100' },
-    { name: 'Critical Risks', value: '3', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
+    { name: 'Active Projects', value: projectsCount > 0 ? projectsCount.toString() : '12', icon: FolderGit2, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
+    { name: 'Total Tasks', value: tasksCount > 0 ? tasksCount.toString() : '48', icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-50', trend: '+5.4%', trendUp: true },
+    { name: 'Avg. Progress', value: '64%', icon: Activity, color: 'text-purple-600', bg: 'bg-purple-50', trend: '-2.1%', trendUp: false },
+    { name: 'Budget Utilized', value: '$2.4M', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'On Track', trendUp: true },
   ];
 
-  const recentProjects = [
-    { name: 'Skyline Residential Tower', client: 'Acme Development', status: 'In Progress', progress: 65 },
-    { name: 'Quantum ERP Migration', client: 'Global Finance Corp', status: 'Planning', progress: 15 },
-    { name: 'Bridge Rehabilitation', client: 'Dept of Transport', status: 'In Progress', progress: 42 },
+  const projectDistribution = [
+    { label: 'In Progress', count: 6, color: 'bg-blue-500' },
+    { label: 'Planning', count: 3, color: 'bg-amber-500' },
+    { label: 'Completed', count: 4, color: 'bg-green-500' },
+    { label: 'On Hold', count: 1, color: 'bg-red-400' },
   ];
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Dashboard Overview</h1>
-          <p className="text-slate-500">Welcome back! Here's what's happening across your projects.</p>
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">Enterprise Overview</h1>
+          <p className="text-slate-500 mt-1">Real-time performance analytics and project health monitoring.</p>
         </div>
         <div className="flex gap-3">
-          <button className="bg-white border border-slate-200 px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-50 transition-colors">
-            Generate Report
+          <button className="flex items-center gap-2 bg-white border border-slate-200 px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
+            <Clock className="h-4 w-4" />
+            Last 30 Days
           </button>
-          <button className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700 transition-colors">
-            New Project
+          <button className="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-blue-700 transition-all shadow-md shadow-blue-200">
+            Export Analytics
           </button>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
-          <Card key={stat.name} className="border-none shadow-sm overflow-hidden">
+          <Card key={stat.name} className="border-none shadow-sm hover:shadow-md transition-all">
             <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className={`p-3 rounded-xl ${stat.bg}`}>
+              <div className="flex items-center justify-between mb-4">
+                <div className={`p-3 rounded-2xl ${stat.bg}`}>
                   <stat.icon className={`h-6 w-6 ${stat.color}`} />
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-slate-500">{stat.name}</p>
-                  <p className="text-2xl font-bold text-slate-900">{stat.value}</p>
+                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${
+                  stat.trendUp ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {stat.trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+                  {stat.trend}
                 </div>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-slate-500">{stat.name}</p>
+                <p className="text-3xl font-extrabold text-slate-900 mt-1">{stat.value}</p>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Projects */}
-        <Card className="lg:col-span-2 border-none shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Active Projects</CardTitle>
-              <TrendingUp className="h-4 w-4 text-slate-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Project Velocity Chart (Mockup with SVG) */}
+        <Card className="lg:col-span-2 border-none shadow-sm overflow-hidden">
+          <CardHeader className="flex flex-row items-center justify-between pb-8">
+            <div>
+              <CardTitle className="text-xl font-bold">Project Velocity</CardTitle>
+              <CardDescription>Tasks completion trend over the last 6 months</CardDescription>
+            </div>
+            <div className="flex items-center gap-4 text-xs font-medium">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                Completed
+              </div>
+              <div className="flex items-center gap-2 text-slate-400">
+                <div className="w-3 h-3 bg-slate-200 rounded-full" />
+                Created
+              </div>
             </div>
           </CardHeader>
+          <CardContent className="px-2">
+            <div className="h-64 w-full relative pt-4">
+              {/* SVG Area Chart */}
+              <svg className="w-full h-full" preserveAspectRatio="none" viewBox="0 0 600 200">
+                <defs>
+                  <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.3" />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+                  </linearGradient>
+                </defs>
+                {/* Grid Lines */}
+                {[0, 50, 100, 150].map(y => (
+                  <line key={y} x1="0" y1={y} x2="600" y2={y} stroke="#f1f5f9" strokeWidth="1" />
+                ))}
+                {/* Area */}
+                <path 
+                  d="M0,180 L50,150 L100,160 L150,110 L200,130 L250,80 L300,90 L350,50 L400,65 L450,30 L500,45 L550,15 L600,10 L600,200 L0,200 Z" 
+                  fill="url(#gradient)" 
+                />
+                {/* Line */}
+                <path 
+                  d="M0,180 L50,150 L100,160 L150,110 L200,130 L250,80 L300,90 L350,50 L400,65 L450,30 L500,45 L550,15 L600,10" 
+                  fill="none" 
+                  stroke="#3b82f6" 
+                  strokeWidth="3" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                />
+                {/* Dots */}
+                {[
+                  [0,180], [100,160], [200,130], [300,90], [400,65], [500,45], [600,10]
+                ].map(([x, y], i) => (
+                  <circle key={i} cx={x} cy={y} r="4" fill="white" stroke="#3b82f6" strokeWidth="2" />
+                ))}
+              </svg>
+              <div className="flex justify-between mt-6 px-4 text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <span>Jan</span>
+                <span>Feb</span>
+                <span>Mar</span>
+                <span>Apr</span>
+                <span>May</span>
+                <span>Jun</span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Project Distribution */}
+        <Card className="border-none shadow-sm flex flex-col">
+          <CardHeader>
+            <CardTitle className="text-xl font-bold">Resource Mix</CardTitle>
+            <CardDescription>Project distribution by status</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 flex flex-col justify-center">
+            <div className="relative h-48 w-48 mx-auto mb-8">
+              {/* Simplified Pie Chart with CSS Conic Gradient */}
+              <div 
+                className="w-full h-full rounded-full" 
+                style={{
+                  background: 'conic-gradient(#3b82f6 0% 40%, #f59e0b 40% 60%, #10b981 60% 90%, #f87171 90% 100%)'
+                }}
+              />
+              <div className="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
+                <span className="text-2xl font-black text-slate-900">{projectsCount || 14}</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">Projects</span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {projectDistribution.map(item => (
+                <div key={item.label} className="flex items-center gap-2">
+                  <div className={`w-3 h-3 rounded ${item.color}`} />
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-slate-900">{item.count}</span>
+                    <span className="text-[10px] text-slate-400 uppercase">{item.label}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Active Projects Table-like view */}
+        <Card className="lg:col-span-2 border-none shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold">Top Performing Projects</CardTitle>
+              <CardDescription>Ranked by delivery velocity and health</CardDescription>
+            </div>
+            <button className="text-sm font-semibold text-blue-600 hover:underline">View All</button>
+          </CardHeader>
           <CardContent>
-            <div className="space-y-6">
-              {recentProjects.map((project) => (
-                <div key={project.name} className="group cursor-pointer">
-                  <div className="flex items-center justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-slate-900 group-hover:text-blue-600 transition-colors">
-                        {project.name}
-                      </p>
-                      <p className="text-sm text-slate-500">{project.client}</p>
+            <div className="space-y-5">
+              {[
+                { name: 'Skyline Residential Tower', manager: 'Sarah J.', progress: 65, health: 'Stable', budget: '$1.2M' },
+                { name: 'Quantum ERP Migration', manager: 'David C.', progress: 24, health: 'Planning', budget: '$850K' },
+                { name: 'Bridge Rehabilitation', manager: 'Emma W.', progress: 42, health: 'Stable', budget: '$2.1M' },
+                { name: 'Smart Grid Pilot', manager: 'Felix A.', progress: 88, health: 'Delivering', budget: '$420K' },
+              ].map((project, i) => (
+                <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
+                      {project.name.charAt(0)}
                     </div>
-                    <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                      project.status === 'In Progress' ? 'bg-blue-50 text-blue-700' : 'bg-slate-100 text-slate-600'
-                    }`}>
-                      {project.status}
-                    </span>
+                    <div>
+                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
+                      <p className="text-xs text-slate-500">PM: {project.manager}</p>
+                    </div>
                   </div>
-                  <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-blue-600 rounded-full transition-all duration-500" 
-                      style={{ width: `${project.progress}%` }}
-                    />
+                  <div className="hidden sm:block w-32">
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${project.progress}%` }} />
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 mt-1">{project.progress}% Complete</p>
                   </div>
-                  <div className="flex justify-end mt-1">
-                    <span className="text-xs text-slate-400">{project.progress}% Complete</span>
+                  <div className="text-right">
+                    <p className="text-sm font-bold text-slate-900">{project.budget}</p>
+                    <Badge variant="outline" className="text-[10px] mt-1 h-5">{project.health}</Badge>
                   </div>
                 </div>
               ))}
@@ -121,39 +248,36 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Team Members */}
+        {/* Activity Feed */}
         <Card className="border-none shadow-sm">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold">Team Members</CardTitle>
-              <Users className="h-4 w-4 text-slate-400" />
-            </div>
+            <CardTitle className="text-lg font-bold">Recent Intelligence</CardTitle>
+            <CardDescription>Live updates from your teams</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
+            <div className="space-y-6 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-slate-100 before:z-0">
               {[
-                { name: 'Sarah Wilson', role: 'Project Manager', status: 'Online' },
-                { name: 'David Chen', role: 'Architect', status: 'In Meeting' },
-                { name: 'Alex Rivera', role: 'Lead Developer', status: 'Online' },
-                { name: 'Emma Knight', role: 'QA Engineer', status: 'Offline' },
-              ].map((member) => (
-                <div key={member.name} className="flex items-center gap-3">
-                  <div className="h-10 w-10 rounded-full bg-slate-200 border border-slate-300 overflow-hidden">
-                    <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${member.name}`} alt={member.name} />
+                { type: 'Task', title: 'Foundation design approved', project: 'Skyline Tower', time: '2h ago', icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-100' },
+                { type: 'Risk', title: 'Materials delay identified', project: 'Bridge Rehab', time: '4h ago', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
+                { type: 'Team', title: 'Sarah J. joined the board', project: 'Global Finance', time: '1d ago', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
+                { type: 'Milestone', title: 'Phase 1 successfully closed', project: 'Smart Grid', time: '2d ago', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-100' },
+              ].map((item, i) => (
+                <div key={i} className="flex gap-4 relative z-10">
+                  <div className={`h-8 w-8 rounded-full ${item.bg} flex items-center justify-center shrink-0 shadow-sm border-2 border-white`}>
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-slate-900 truncate">{member.name}</p>
-                    <p className="text-xs text-slate-500 truncate">{member.role}</p>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h5 className="text-sm font-bold text-slate-900">{item.title}</h5>
+                      <span className="text-[10px] text-slate-400 whitespace-nowrap">{item.time}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">{item.project} • {item.type}</p>
                   </div>
-                  <div className={`h-2 w-2 rounded-full ${
-                    member.status === 'Online' ? 'bg-green-500' : 
-                    member.status === 'In Meeting' ? 'bg-amber-500' : 'bg-slate-300'
-                  }`} />
                 </div>
               ))}
             </div>
-            <button className="w-full mt-6 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors py-2 border border-blue-100 rounded-md bg-blue-50/50">
-              View All Team
+            <button className="w-full mt-8 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest border border-slate-100 rounded-xl hover:bg-slate-50">
+              Audit Full Stream
             </button>
           </CardContent>
         </Card>
