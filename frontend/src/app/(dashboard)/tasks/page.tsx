@@ -7,6 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Plus, MoreHorizontal, Calendar, User, Clock, Flag, Loader2 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useWebSockets } from '@/hooks/useWebSockets';
+import { Modal } from '@/components/Modal';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const initialTasks = [
   { id: '1', title: 'Site Preparation & Fencing', status: 'TODO', priority: 'HIGH', assignee: 'Sarah W.', dueDate: '2024-06-15' },
@@ -24,9 +27,60 @@ const columns = [
 ];
 
 export default function TasksPage() {
-  const [tasks, setTasks] = useState<any[]>(initialTasks);
+  const [tasks, setTasks] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [newTask, setNewTask] = useState({ 
+    title: '', 
+    description: '', 
+    priority: 'MEDIUM', 
+    status: 'TODO', 
+    dueDate: '',
+    projectId: ''
+  });
   const { lastMessage, sendMessage } = useWebSockets('/topic/tasks');
+
+  const loadTasks = async () => {
+    setIsLoading(true);
+    try {
+      const projectsData = await api.projects.list();
+      setProjects(projectsData);
+      
+      let allTasks: any[] = [];
+      if (projectsData.length > 0) {
+        if (!newTask.projectId) setNewTask(prev => ({ ...prev, projectId: projectsData[0].id }));
+        
+        for (const p of projectsData) {
+          const pt = await api.tasks.listByProject(p.id);
+          allTasks = [...allTasks, ...pt];
+        }
+        setTasks(allTasks);
+      }
+    } catch (error) {
+      console.error("Failed to load tasks:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateTask = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTask.projectId) return;
+    setIsCreating(true);
+    try {
+      await api.tasks.create(newTask.projectId, newTask);
+      setIsModalOpen(false);
+      setNewTask({ ...newTask, title: '', description: '', dueDate: '' });
+      loadTasks();
+    } catch (error) {
+      alert("Failed to create task");
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   // Handle incoming live updates
   React.useEffect(() => {
@@ -44,19 +98,6 @@ export default function TasksPage() {
   }, [lastMessage]);
 
   React.useEffect(() => {
-    const loadTasks = async () => {
-      try {
-        const projects = await api.projects.list();
-        if (projects.length > 0) {
-          const projectTasks = await api.tasks.listByProject(projects[0].id);
-          if (projectTasks.length > 0) setTasks(projectTasks);
-        }
-      } catch (error) {
-        console.error("Failed to load tasks:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadTasks();
   }, []);
 
@@ -80,12 +121,79 @@ export default function TasksPage() {
         <div className="flex gap-3">
           <Button variant="outline" size="sm">Filter</Button>
           <Button variant="outline" size="sm">Sort</Button>
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setIsModalOpen(true)} size="sm" className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             New Task
           </Button>
         </div>
       </div>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Create New Task"
+      >
+        <form onSubmit={handleCreateTask} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="project">Project</Label>
+            <select 
+              id="project"
+              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              value={newTask.projectId}
+              onChange={(e) => setNewTask({...newTask, projectId: e.target.value})}
+              required
+            >
+              <option value="" disabled>Select a project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">Task Title</Label>
+            <Input 
+              id="title" 
+              required 
+              placeholder="e.g. Design System update" 
+              value={newTask.title}
+              onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="priority">Priority</Label>
+              <select 
+                id="priority"
+                className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+                value={newTask.priority}
+                onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="dueDate">Due Date</Label>
+              <Input 
+                id="dueDate" 
+                type="date" 
+                required
+                value={newTask.dueDate}
+                onChange={(e) => setNewTask({...newTask, dueDate: e.target.value})}
+              />
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Task
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="flex-1 overflow-x-auto pb-4">
         <div className="flex gap-6 min-h-full">

@@ -37,6 +37,26 @@ public class RiskService {
                 .collect(Collectors.toList());
     }
 
+    public RiskDTO createRisk(UUID projectId, RiskDTO riskDTO) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        Risk risk = new Risk();
+        risk.setProject(project);
+        risk.setTitle(riskDTO.getTitle());
+        risk.setDescription(riskDTO.getDescription());
+        risk.setProbability(riskDTO.getProbability());
+        risk.setImpact(riskDTO.getImpact());
+        risk.setStatus(riskDTO.getStatus() != null ? riskDTO.getStatus() : "OPEN");
+        risk.setMitigationPlan(riskDTO.getMitigationPlan());
+
+        if (riskDTO.getOwnerId() != null) {
+            risk.setOwner(userRepository.findById(riskDTO.getOwnerId()).orElse(null));
+        }
+
+        return convertToDTO(riskRepository.save(risk));
+    }
+
     private RiskDTO convertToDTO(Risk risk) {
         RiskDTO dto = new RiskDTO();
         dto.setId(risk.getId());

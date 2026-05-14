@@ -1,7 +1,6 @@
 package com.acmecorp.pmplatform.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class TaskDTO {
@@ -11,8 +10,8 @@ public class TaskDTO {
     private String description;
     private String status;
     private String priority;
-    private LocalDateTime startDate;
-    private LocalDateTime dueDate;
+    private String startDate;
+    private String dueDate;
     private BigDecimal estimatedHours;
 
     // Getters and Setters
@@ -28,10 +27,10 @@ public class TaskDTO {
     public void setStatus(String status) { this.status = status; }
     public String getPriority() { return priority; }
     public void setPriority(String priority) { this.priority = priority; }
-    public LocalDateTime getStartDate() { return startDate; }
-    public void setStartDate(LocalDateTime startDate) { this.startDate = startDate; }
-    public LocalDateTime getDueDate() { return dueDate; }
-    public void setDueDate(LocalDateTime dueDate) { this.dueDate = dueDate; }
+    public String getStartDate() { return startDate; }
+    public void setStartDate(String startDate) { this.startDate = startDate; }
+    public String getDueDate() { return dueDate; }
+    public void setDueDate(String dueDate) { this.dueDate = dueDate; }
     public BigDecimal getEstimatedHours() { return estimatedHours; }
     public void setEstimatedHours(BigDecimal estimatedHours) { this.estimatedHours = estimatedHours; }
 }

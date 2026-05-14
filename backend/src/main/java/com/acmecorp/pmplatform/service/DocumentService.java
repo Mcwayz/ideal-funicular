@@ -16,6 +16,12 @@ public class DocumentService {
     @Autowired
     private DocumentRepository documentRepository;
 
+    @Autowired
+    private com.acmecorp.pmplatform.repository.ProjectRepository projectRepository;
+
+    @Autowired
+    private com.acmecorp.pmplatform.repository.UserRepository userRepository;
+
     public List<DocumentDTO> getDocumentsByProjectId(UUID projectId) {
         return documentRepository.findByProjectIdAndIsDeletedFalse(projectId).stream()
                 .map(this::convertToDTO)
@@ -27,6 +33,25 @@ public class DocumentService {
                 .filter(doc -> !doc.isDeleted())
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
+    }
+
+    public DocumentDTO createDocument(UUID projectId, DocumentDTO documentDTO) {
+        com.acmecorp.pmplatform.entity.Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        Document doc = new Document();
+        doc.setProject(project);
+        doc.setName(documentDTO.getName());
+        doc.setFileType(documentDTO.getFileType());
+        doc.setFileSize(documentDTO.getFileSize());
+        doc.setFilePath(documentDTO.getFilePath());
+        doc.setVersion(1);
+
+        if (documentDTO.getUploadedById() != null) {
+            doc.setUploadedBy(userRepository.findById(documentDTO.getUploadedById()).orElse(null));
+        }
+
+        return convertToDTO(documentRepository.save(doc));
     }
 
     private DocumentDTO convertToDTO(Document doc) {

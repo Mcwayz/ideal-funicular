@@ -36,9 +36,23 @@ public class TaskService {
         task.setDescription(dto.getDescription());
         task.setStatus(dto.getStatus() != null ? dto.getStatus() : "TODO");
         task.setPriority(dto.getPriority() != null ? dto.getPriority() : "MEDIUM");
-        task.setStartDate(dto.getStartDate());
-        task.setDueDate(dto.getDueDate());
         task.setEstimatedHours(dto.getEstimatedHours());
+
+        if (dto.getDueDate() != null && !dto.getDueDate().isBlank()) {
+            try {
+                task.setDueDate(java.time.LocalDate.parse(dto.getDueDate()).atStartOfDay());
+            } catch (Exception e) {
+                // Ignore unparseable date
+            }
+        }
+
+        if (dto.getStartDate() != null && !dto.getStartDate().isBlank()) {
+            try {
+                task.setStartDate(java.time.LocalDate.parse(dto.getStartDate()).atStartOfDay());
+            } catch (Exception e) {
+                // Ignore unparseable date
+            }
+        }
 
         Task saved = taskRepository.save(task);
         return mapToDTO(saved);
@@ -54,8 +68,8 @@ public class TaskService {
         dto.setDescription(task.getDescription());
         dto.setStatus(task.getStatus());
         dto.setPriority(task.getPriority());
-        dto.setStartDate(task.getStartDate());
-        dto.setDueDate(task.getDueDate());
+        dto.setStartDate(task.getStartDate() != null ? task.getStartDate().toLocalDate().toString() : null);
+        dto.setDueDate(task.getDueDate() != null ? task.getDueDate().toLocalDate().toString() : null);
         dto.setEstimatedHours(task.getEstimatedHours());
         return dto;
     }

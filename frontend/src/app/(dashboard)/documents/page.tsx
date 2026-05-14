@@ -24,6 +24,9 @@ import {
   Star
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Modal } from '@/components/Modal';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const documents = [
   { id: '1', name: 'Site_Plan_Revision_B.pdf', type: 'PDF', size: '12.4 MB', project: 'Skyline Tower', modified: '2h ago', owner: 'Sarah J.', category: 'Architecture' },
@@ -37,20 +40,57 @@ const documents = [
 export default function DocumentsPage() {
   const [documents, setDocuments] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [projects, setProjects] = React.useState<any[]>([]);
+  const [newDoc, setNewDoc] = React.useState({ 
+    name: '', 
+    fileType: 'PDF', 
+    fileSize: 0, 
+    projectId: '',
+    filePath: 'internal://docs/'
+  });
+
+  const loadDocuments = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.documents.list();
+      setDocuments(data);
+      
+      const projectsData = await api.projects.list();
+      setProjects(projectsData);
+      if (projectsData.length > 0 && !newDoc.projectId) {
+        setNewDoc(prev => ({ ...prev, projectId: projectsData[0].id }));
+      }
+    } catch (error) {
+      console.error("Failed to load documents:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   React.useEffect(() => {
-    const loadDocuments = async () => {
-      try {
-        const data = await api.documents.list();
-        setDocuments(data);
-      } catch (error) {
-        console.error("Failed to load documents:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadDocuments();
   }, []);
+
+  const handleCreateDoc = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newDoc.projectId) return;
+    setIsCreating(true);
+    try {
+      // Mocking file size for the demo
+      const payload = { ...newDoc, fileSize: Math.floor(Math.random() * 50000000) };
+      await api.documents.create(newDoc.projectId, payload);
+      setIsModalOpen(false);
+      setNewDoc({ ...newDoc, name: '' });
+      loadDocuments();
+    } catch (error) {
+      alert("Failed to upload document");
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const getFileIcon = (type: string) => {
     const typeUpper = type?.toUpperCase();
@@ -82,12 +122,68 @@ export default function DocumentsPage() {
             <Share2 className="h-4 w-4 mr-2" />
             Share Library
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Upload File
           </Button>
         </div>
       </div>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Upload New Document"
+      >
+        <form onSubmit={handleCreateDoc} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="project">Project Selection</Label>
+            <select 
+              id="project"
+              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              value={newDoc.projectId}
+              onChange={(e) => setNewDoc({...newDoc, projectId: e.target.value})}
+              required
+            >
+              <option value="" disabled>Select project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="name">Document Name</Label>
+            <Input 
+              id="name" 
+              required 
+              placeholder="e.g. site_audit_v1.pdf" 
+              value={newDoc.name}
+              onChange={(e) => setNewDoc({...newDoc, name: e.target.value})}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="type">File Type</Label>
+            <select 
+              id="type"
+              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              value={newDoc.fileType}
+              onChange={(e) => setNewDoc({...newDoc, fileType: e.target.value})}
+            >
+              <option value="PDF">PDF Document</option>
+              <option value="DOCX">Word Document</option>
+              <option value="XLSX">Excel Spreadsheet</option>
+              <option value="FIG">Figma Design</option>
+              <option value="SQL">SQL Script</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Register Document
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <Card className="md:col-span-1 border-none shadow-sm h-fit">

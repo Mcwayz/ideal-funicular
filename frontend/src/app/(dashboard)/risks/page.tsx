@@ -19,6 +19,9 @@ import {
   Users
 } from 'lucide-react';
 import { api } from '@/lib/api';
+import { Modal } from '@/components/Modal';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const risks = [
   { 
@@ -66,20 +69,56 @@ const risks = [
 export default function RisksPage() {
   const [risks, setRisks] = React.useState<any[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [isModalOpen, setIsModalOpen] = React.useState(false);
+  const [isCreating, setIsCreating] = React.useState(false);
+  const [projects, setProjects] = React.useState<any[]>([]);
+  const [newRisk, setNewRisk] = React.useState({ 
+    title: '', 
+    description: '', 
+    impact: 'MEDIUM', 
+    probability: 'MEDIUM', 
+    projectId: '',
+    mitigationPlan: ''
+  });
+
+  const loadRisks = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.risks.list();
+      setRisks(data);
+      
+      const projectsData = await api.projects.list();
+      setProjects(projectsData);
+      if (projectsData.length > 0 && !newRisk.projectId) {
+        setNewRisk(prev => ({ ...prev, projectId: projectsData[0].id }));
+      }
+    } catch (error) {
+      console.error("Failed to load risks:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   React.useEffect(() => {
-    const loadRisks = async () => {
-      try {
-        const data = await api.risks.list();
-        setRisks(data);
-      } catch (error) {
-        console.error("Failed to load risks:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadRisks();
   }, []);
+
+  const handleCreateRisk = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRisk.projectId) return;
+    setIsCreating(true);
+    try {
+      await api.risks.create(newRisk.projectId, newRisk);
+      setIsModalOpen(false);
+      setNewRisk({ ...newRisk, title: '', description: '', mitigationPlan: '' });
+      loadRisks();
+    } catch (error) {
+      alert("Failed to register risk");
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const getImpactColor = (impact: any) => {
     const impactStr = typeof impact === 'number' ? 
@@ -114,12 +153,92 @@ export default function RisksPage() {
             <Filter className="h-4 w-4 mr-2" />
             Impact View
           </Button>
-          <Button className="bg-blue-600 hover:bg-blue-700">
+          <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
             <Plus className="h-4 w-4 mr-2" />
             Register Risk
           </Button>
         </div>
       </div>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Register New Risk"
+      >
+        <form onSubmit={handleCreateRisk} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="project">Associated Project</Label>
+            <select 
+              id="project"
+              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              value={newRisk.projectId}
+              onChange={(e) => setNewRisk({...newRisk, projectId: e.target.value})}
+              required
+            >
+              <option value="" disabled>Select project</option>
+              {projects.map(p => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">Risk Title</Label>
+            <Input 
+              id="title" 
+              required 
+              placeholder="e.g. Supplier Insolvency" 
+              value={newRisk.title}
+              onChange={(e) => setNewRisk({...newRisk, title: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="impact">Impact Level</Label>
+              <select 
+                id="impact"
+                className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+                value={newRisk.impact}
+                onChange={(e) => setNewRisk({...newRisk, impact: e.target.value})}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+                <option value="CRITICAL">Critical</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prob">Probability</Label>
+              <select 
+                id="prob"
+                className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+                value={newRisk.probability}
+                onChange={(e) => setNewRisk({...newRisk, probability: e.target.value})}
+              >
+                <option value="LOW">Low</option>
+                <option value="MEDIUM">Medium</option>
+                <option value="HIGH">High</option>
+              </select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="mitigation">Mitigation Strategy</Label>
+            <textarea 
+              id="mitigation"
+              className="w-full min-h-[80px] p-3 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              placeholder="How will we address this if it occurs?"
+              value={newRisk.mitigationPlan}
+              onChange={(e) => setNewRisk({...newRisk, mitigationPlan: e.target.value})}
+            />
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Register Risk
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       {/* Risk Summary Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

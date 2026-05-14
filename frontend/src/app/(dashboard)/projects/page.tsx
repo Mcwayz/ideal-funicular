@@ -20,25 +20,50 @@ import {
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import Link from 'next/link';
+import { Modal } from '@/components/Modal';
+import { Label } from '@/components/ui/label';
+import { useRouter } from 'next/navigation';
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [newProject, setNewProject] = useState({ name: '', description: '', type: 'GENERAL', status: 'PLANNING' });
+  const router = useRouter();
+
+  const loadProjects = async () => {
+    setIsLoading(true);
+    try {
+      const data = await api.projects.list();
+      setProjects(data);
+    } catch (error) {
+      console.error("Failed to load projects:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        const data = await api.projects.list();
-        setProjects(data);
-      } catch (error) {
-        console.error("Failed to load projects:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
     loadProjects();
   }, []);
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+    try {
+      await api.projects.create(newProject);
+      setIsModalOpen(false);
+      setNewProject({ name: '', description: '', type: 'GENERAL', status: 'PLANNING' });
+      loadProjects();
+    } catch (error) {
+      alert("Failed to create project. Check console.");
+      console.error(error);
+    } finally {
+      setIsCreating(false);
+    }
+  };
 
   const getTypeIcon = (type: string) => {
     switch (type) {
@@ -70,11 +95,76 @@ export default function ProjectsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-slate-900">Projects</h1>
           <p className="text-slate-500">Manage and monitor all enterprise initiatives.</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
+        <Button onClick={() => setIsModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
           <Plus className="h-4 w-4 mr-2" />
           New Project
         </Button>
       </div>
+
+      <Modal 
+        isOpen={isModalOpen} 
+        onClose={() => setIsModalOpen(false)} 
+        title="Create New Project"
+      >
+        <form onSubmit={handleCreateProject} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Project Name</Label>
+            <Input 
+              id="name" 
+              required 
+              placeholder="e.g. Skyline Tower" 
+              value={newProject.name}
+              onChange={(e) => setNewProject({...newProject, name: e.target.value})}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="desc">Description</Label>
+            <textarea 
+              id="desc"
+              className="w-full min-h-[100px] p-3 text-sm bg-slate-50 border border-slate-200 rounded-md focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none"
+              placeholder="Brief overview of project goals..."
+              value={newProject.description}
+              onChange={(e) => setNewProject({...newProject, description: e.target.value})}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="type">Type</Label>
+              <select 
+                id="type"
+                className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+                value={newProject.type}
+                onChange={(e) => setNewProject({...newProject, type: e.target.value})}
+              >
+                <option value="GENERAL">General</option>
+                <option value="CONSTRUCTION">Construction</option>
+                <option value="SOFTWARE">Software</option>
+                <option value="INFRASTRUCTURE">Infrastructure</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Initial Status</Label>
+              <select 
+                id="status"
+                className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+                value={newProject.status}
+                onChange={(e) => setNewProject({...newProject, status: e.target.value})}
+              >
+                <option value="PLANNING">Planning</option>
+                <option value="IN_PROGRESS">In Progress</option>
+                <option value="ON_HOLD">On Hold</option>
+              </select>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 pt-4">
+            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
+            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+              {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Project
+            </Button>
+          </div>
+        </form>
+      </Modal>
 
       <Card className="border-none shadow-sm">
         <CardContent className="p-4">

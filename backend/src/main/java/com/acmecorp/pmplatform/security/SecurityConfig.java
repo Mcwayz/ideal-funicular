@@ -39,7 +39,7 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/**").permitAll()
+                .requestMatchers("/api/v1/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session

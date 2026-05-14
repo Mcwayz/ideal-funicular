@@ -25,4 +25,9 @@ public class RiskController {
     public ResponseEntity<List<RiskDTO>> getRisksByProjectId(@PathVariable UUID projectId) {
         return ResponseEntity.ok(riskService.getRisksByProjectId(projectId));
     }
+
+    @PostMapping("/project/{projectId}")
+    public ResponseEntity<RiskDTO> createRisk(@PathVariable UUID projectId, @RequestBody RiskDTO riskDTO) {
+        return ResponseEntity.ok(riskService.createRisk(projectId, riskDTO));
+    }
 }

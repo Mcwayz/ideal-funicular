@@ -41,10 +41,12 @@ export const api = {
   risks: {
     list: () => fetchApi('/risks'),
     listByProject: (projectId: string) => fetchApi(`/risks/project/${projectId}`),
+    create: (projectId: string, data: any) => fetchApi(`/risks/project/${projectId}`, { method: 'POST', body: JSON.stringify(data) }),
   },
   documents: {
     list: () => fetchApi('/documents'),
     listByProject: (projectId: string) => fetchApi(`/documents/project/${projectId}`),
+    create: (projectId: string, data: any) => fetchApi(`/documents/project/${projectId}`, { method: 'POST', body: JSON.stringify(data) }),
   },
   users: {
     list: () => fetchApi('/users'),

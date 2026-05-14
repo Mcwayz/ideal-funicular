@@ -25,4 +25,9 @@ public class DocumentController {
     public ResponseEntity<List<DocumentDTO>> getDocumentsByProjectId(@PathVariable UUID projectId) {
         return ResponseEntity.ok(documentService.getDocumentsByProjectId(projectId));
     }
+
+    @PostMapping("/project/{projectId}")
+    public ResponseEntity<DocumentDTO> createDocument(@PathVariable UUID projectId, @RequestBody DocumentDTO documentDTO) {
+        return ResponseEntity.ok(documentService.createDocument(projectId, documentDTO));
+    }
 }
