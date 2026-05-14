@@ -168,6 +168,30 @@ public class Task extends BaseEntity {
         this.actualHours = actualHours;
     }
 
+    public BigDecimal getBudgetedCost() {
+        return budgetedCost;
+    }
+
+    public void setBudgetedCost(BigDecimal budgetedCost) {
+        this.budgetedCost = budgetedCost;
+    }
+
+    public BigDecimal getActualCost() {
+        return actualCost;
+    }
+
+    public void setActualCost(BigDecimal actualCost) {
+        this.actualCost = actualCost;
+    }
+
+    public BigDecimal getResourceHours() {
+        return resourceHours;
+    }
+
+    public void setResourceHours(BigDecimal resourceHours) {
+        this.resourceHours = resourceHours;
+    }
+
     public Integer getStoryPoints() {
         return storyPoints;
     }

@@ -20,11 +20,13 @@ public class ProjectFinanceService {
         List<Task> tasks = taskRepository.findByProjectIdAndIsDeletedFalse(projectId);
 
         BigDecimal totalBudgeted = tasks.stream()
-                .map(t -> t.getBudgetedCost() != null ? t.getBudgetedCost() : BigDecimal.ZERO)
+                .map(t -> t.getBudgetedCost())
+                .map(cost -> cost != null ? cost : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal totalActual = tasks.stream()
-                .map(t -> t.getActualCost() != null ? t.getActualCost() : BigDecimal.ZERO)
+                .map(t -> t.getActualCost())
+                .map(cost -> cost != null ? cost : BigDecimal.ZERO)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         BigDecimal variance = totalBudgeted.subtract(totalActual);
