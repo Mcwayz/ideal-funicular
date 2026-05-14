@@ -50,6 +50,9 @@ export default function DocumentsPage() {
     projectId: '',
     filePath: 'internal://docs/'
   });
+  const [selectedFile, setSelectedFile] = React.useState<File | null>(null);
+  const [isDragOver, setIsDragOver] = React.useState(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   const loadDocuments = async () => {
     setIsLoading(true);
@@ -73,16 +76,38 @@ export default function DocumentsPage() {
     loadDocuments();
   }, []);
 
+  const handleFileSelect = (file: File) => {
+    setSelectedFile(file);
+    const ext = file.name.split('.').pop()?.toUpperCase() || 'PDF';
+    setNewDoc(prev => ({
+      ...prev,
+      name: file.name,
+      fileType: ext,
+      fileSize: file.size,
+    }));
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const file = e.dataTransfer.files[0];
+    if (file) handleFileSelect(file);
+  };
+
   const handleCreateDoc = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newDoc.projectId) return;
     setIsCreating(true);
     try {
-      // Mocking file size for the demo
-      const payload = { ...newDoc, fileSize: Math.floor(Math.random() * 50000000) };
-      await api.documents.create(newDoc.projectId, payload);
+      await api.documents.create(newDoc.projectId, {
+        name: newDoc.name,
+        fileType: newDoc.fileType,
+        fileSize: newDoc.fileSize || Math.floor(Math.random() * 50000000),
+        filePath: `internal://docs/${newDoc.name}`,
+      });
       setIsModalOpen(false);
-      setNewDoc({ ...newDoc, name: '' });
+      setSelectedFile(null);
+      setNewDoc({ name: '', fileType: 'PDF', fileSize: 0, projectId: newDoc.projectId, filePath: 'internal://docs/' });
       loadDocuments();
     } catch (error) {
       alert("Failed to upload document");
@@ -131,15 +156,16 @@ export default function DocumentsPage() {
 
       <Modal 
         isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        title="Upload New Document"
+        onClose={() => { setIsModalOpen(false); setSelectedFile(null); }} 
+        title="Upload Document"
       >
-        <form onSubmit={handleCreateDoc} className="space-y-4">
+        <form onSubmit={handleCreateDoc} className="space-y-5">
+          {/* Project selector */}
           <div className="space-y-2">
-            <Label htmlFor="project">Project Selection</Label>
+            <Label htmlFor="project">Project</Label>
             <select 
               id="project"
-              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
+              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
               value={newDoc.projectId}
               onChange={(e) => setNewDoc({...newDoc, projectId: e.target.value})}
               required
@@ -150,6 +176,60 @@ export default function DocumentsPage() {
               ))}
             </select>
           </div>
+
+          {/* File drop zone */}
+          <div
+            onClick={() => fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={(e) => { e.preventDefault(); setIsDragOver(true); }}
+            onDragLeave={() => setIsDragOver(false)}
+            className={`relative cursor-pointer rounded-2xl border-2 border-dashed p-6 text-center transition-all ${
+              isDragOver 
+                ? 'border-blue-500 bg-blue-50 scale-[1.01]' 
+                : selectedFile 
+                  ? 'border-green-400 bg-green-50'
+                  : 'border-slate-200 bg-slate-50 hover:border-blue-400 hover:bg-blue-50/50'
+            }`}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFileSelect(f); }}
+            />
+
+            {selectedFile ? (
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-14 w-14 bg-green-100 rounded-2xl flex items-center justify-center">
+                  {getFileIcon(newDoc.fileType)}
+                </div>
+                <div>
+                  <p className="font-bold text-slate-900 text-sm truncate max-w-[280px]">{selectedFile.name}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{formatFileSize(selectedFile.size)} • {newDoc.fileType}</p>
+                </div>
+                <button 
+                  type="button"
+                  onClick={(e) => { e.stopPropagation(); setSelectedFile(null); setNewDoc({...newDoc, name: '', fileSize: 0}); }}
+                  className="text-xs text-red-500 hover:text-red-700 font-medium mt-1"
+                >
+                  Remove file
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3">
+                <div className="h-14 w-14 bg-slate-100 rounded-2xl flex items-center justify-center">
+                  <Plus className="h-7 w-7 text-slate-400" />
+                </div>
+                <div>
+                  <p className="font-semibold text-slate-700">Drop your file here</p>
+                  <p className="text-xs text-slate-400 mt-0.5">or <span className="text-blue-600 font-semibold">browse</span> to choose a file</p>
+                </div>
+                <p className="text-[10px] text-slate-300 uppercase tracking-widest font-bold">PDF · DOCX · XLSX · FIG · SQL · PNG · any format</p>
+              </div>
+            )}
+          </div>
+
+          {/* Document name (editable after file picked) */}
           <div className="space-y-2">
             <Label htmlFor="name">Document Name</Label>
             <Input 
@@ -160,26 +240,12 @@ export default function DocumentsPage() {
               onChange={(e) => setNewDoc({...newDoc, name: e.target.value})}
             />
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="type">File Type</Label>
-            <select 
-              id="type"
-              className="w-full p-2 text-sm bg-slate-50 border border-slate-200 rounded-md outline-none"
-              value={newDoc.fileType}
-              onChange={(e) => setNewDoc({...newDoc, fileType: e.target.value})}
-            >
-              <option value="PDF">PDF Document</option>
-              <option value="DOCX">Word Document</option>
-              <option value="XLSX">Excel Spreadsheet</option>
-              <option value="FIG">Figma Design</option>
-              <option value="SQL">SQL Script</option>
-            </select>
-          </div>
-          <div className="flex justify-end gap-3 pt-4">
-            <Button type="button" variant="ghost" onClick={() => setIsModalOpen(false)}>Cancel</Button>
-            <Button type="submit" disabled={isCreating} className="bg-blue-600 hover:bg-blue-700">
+
+          <div className="flex justify-end gap-3 pt-2">
+            <Button type="button" variant="ghost" onClick={() => { setIsModalOpen(false); setSelectedFile(null); }}>Cancel</Button>
+            <Button type="submit" disabled={isCreating || !newDoc.name} className="bg-blue-600 hover:bg-blue-700">
               {isCreating ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Register Document
+              Upload Document
             </Button>
           </div>
         </form>
