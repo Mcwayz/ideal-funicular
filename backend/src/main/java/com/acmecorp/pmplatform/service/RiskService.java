@@ -45,8 +45,8 @@ public class RiskService {
         risk.setProject(project);
         risk.setTitle(riskDTO.getTitle());
         risk.setDescription(riskDTO.getDescription());
-        risk.setProbability(riskDTO.getProbability());
-        risk.setImpact(riskDTO.getImpact());
+        risk.setProbability(labelToScore(riskDTO.getProbability()));
+        risk.setImpact(labelToScore(riskDTO.getImpact()));
         risk.setStatus(riskDTO.getStatus() != null ? riskDTO.getStatus() : "OPEN");
         risk.setMitigationPlan(riskDTO.getMitigationPlan());
 
@@ -57,14 +57,35 @@ public class RiskService {
         return convertToDTO(riskRepository.save(risk));
     }
 
+    private Integer labelToScore(String label) {
+        if (label == null) return 3;
+        switch (label.toUpperCase()) {
+            case "CRITICAL": return 5;
+            case "HIGH":     return 4;
+            case "MEDIUM":   return 3;
+            case "LOW":      return 1;
+            default: {
+                try { return Integer.parseInt(label); } catch (Exception e) { return 3; }
+            }
+        }
+    }
+
+    private String scoreToLabel(Integer score) {
+        if (score == null) return "MEDIUM";
+        if (score >= 5) return "CRITICAL";
+        if (score >= 4) return "HIGH";
+        if (score >= 3) return "MEDIUM";
+        return "LOW";
+    }
+
     private RiskDTO convertToDTO(Risk risk) {
         RiskDTO dto = new RiskDTO();
         dto.setId(risk.getId());
         dto.setProjectId(risk.getProject().getId());
         dto.setTitle(risk.getTitle());
         dto.setDescription(risk.getDescription());
-        dto.setProbability(risk.getProbability());
-        dto.setImpact(risk.getImpact());
+        dto.setProbability(scoreToLabel(risk.getProbability()));
+        dto.setImpact(scoreToLabel(risk.getImpact()));
         dto.setStatus(risk.getStatus());
         dto.setMitigationPlan(risk.getMitigationPlan());
         if (risk.getOwner() != null) {
