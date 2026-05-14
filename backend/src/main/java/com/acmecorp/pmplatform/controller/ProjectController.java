@@ -24,4 +24,9 @@ public class ProjectController {
     public ResponseEntity<ProjectDTO> createProject(@RequestBody ProjectDTO projectDTO) {
         return ResponseEntity.ok(projectService.createProject(projectDTO));
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ProjectDTO> getProjectById(@PathVariable java.util.UUID id) {
+        return ResponseEntity.ok(projectService.getProjectById(id));
+    }
 }

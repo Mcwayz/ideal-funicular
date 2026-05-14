@@ -38,6 +38,13 @@ public class ProjectService {
         return mapToDTO(saved);
     }
 
+    public ProjectDTO getProjectById(java.util.UUID id) {
+        return projectRepository.findById(id)
+                .filter(p -> !p.isDeleted())
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + id));
+    }
+
     private ProjectDTO mapToDTO(Project project) {
         ProjectDTO dto = new ProjectDTO();
         dto.setId(project.getId());
