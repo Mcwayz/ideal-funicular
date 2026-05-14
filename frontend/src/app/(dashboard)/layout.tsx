@@ -16,7 +16,6 @@ export default function DashboardLayout({
     { name: 'Dashboard', href: '/', icon: LayoutDashboard },
     { name: 'Projects', href: '/projects', icon: FolderGit2 },
     { name: 'Tasks', href: '/tasks', icon: CheckSquare },
-    { name: 'Finances', href: '/projects/1/finances', icon: DollarSign },
     { name: 'Risks', href: '/risks', icon: AlertTriangle },
     { name: 'Documents', href: '/documents', icon: FileText },
   ];
