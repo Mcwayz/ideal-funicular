@@ -21,22 +21,39 @@ import { Badge } from "@/components/ui/badge";
 import { api } from '@/lib/api';
 
 export default function DashboardPage() {
-  const [projectsCount, setProjectsCount] = useState(0);
-  const [tasksCount, setTasksCount] = useState(0);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [tasks, setTasks] = useState<any[]>([]);
+  const [intelligence, setIntelligence] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const loadData = async () => {
       try {
-        const projects = await api.projects.list();
-        setProjectsCount(projects.length);
+        const projectsData = await api.projects.list();
+        setProjects(projectsData);
         
-        let totalTasks = 0;
-        for (const project of projects) {
-          const tasks = await api.tasks.listByProject(project.id);
-          totalTasks += tasks.length;
+        let allTasks: any[] = [];
+        for (const project of projectsData) {
+          const projectTasks = await api.tasks.listByProject(project.id);
+          allTasks = [...allTasks, ...projectTasks.map((t: any) => ({ ...t, projectName: project.name }))];
         }
-        setTasksCount(totalTasks);
+        setTasks(allTasks);
+
+        // Derive intelligence from recent tasks and projects
+        const recentIntel = allTasks
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5)
+          .map(t => ({
+            type: 'Task',
+            title: t.title,
+            project: t.projectName,
+            time: 'Recently',
+            icon: CheckSquare,
+            color: 'text-green-600',
+            bg: 'bg-green-100'
+          }));
+        setIntelligence(recentIntel);
+
       } catch (error) {
         console.error("Failed to load dashboard data:", error);
       } finally {
@@ -46,18 +63,24 @@ export default function DashboardPage() {
     loadData();
   }, []);
 
+  const avgProgress = projects.length > 0 
+    ? Math.round(projects.reduce((acc, p) => acc + (p.progress || 0), 0) / projects.length) 
+    : 0;
+
+  const totalBudget = projects.reduce((acc, p) => acc + (p.budget || 0), 0);
+
   const stats = [
-    { name: 'Active Projects', value: projectsCount > 0 ? projectsCount.toString() : '12', icon: FolderGit2, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
-    { name: 'Total Tasks', value: tasksCount > 0 ? tasksCount.toString() : '48', icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-50', trend: '+5.4%', trendUp: true },
-    { name: 'Avg. Progress', value: '64%', icon: Activity, color: 'text-purple-600', bg: 'bg-purple-50', trend: '-2.1%', trendUp: false },
-    { name: 'Budget Utilized', value: '$2.4M', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'On Track', trendUp: true },
+    { name: 'Active Projects', value: projects.length.toString(), icon: FolderGit2, color: 'text-blue-600', bg: 'bg-blue-50', trend: '+12%', trendUp: true },
+    { name: 'Total Tasks', value: tasks.length.toString(), icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-50', trend: '+5.4%', trendUp: true },
+    { name: 'Avg. Progress', value: `${avgProgress}%`, icon: Activity, color: 'text-purple-600', bg: 'bg-purple-50', trend: '-2.1%', trendUp: false },
+    { name: 'Enterprise Value', value: totalBudget > 0 ? `$${(totalBudget / 1000000).toFixed(1)}M` : '$0M', icon: DollarSign, color: 'text-amber-600', bg: 'bg-amber-50', trend: 'Live', trendUp: true },
   ];
 
   const projectDistribution = [
-    { label: 'In Progress', count: 6, color: 'bg-blue-500' },
-    { label: 'Planning', count: 3, color: 'bg-amber-500' },
-    { label: 'Completed', count: 4, color: 'bg-green-500' },
-    { label: 'On Hold', count: 1, color: 'bg-red-400' },
+    { label: 'In Progress', count: projects.filter(p => p.status === 'IN_PROGRESS').length, color: 'bg-blue-500' },
+    { label: 'Planning', count: projects.filter(p => p.status === 'PLANNING').length, color: 'bg-amber-500' },
+    { label: 'Completed', count: projects.filter(p => p.status === 'DONE').length, color: 'bg-green-500' },
+    { label: 'On Hold', count: projects.filter(p => p.status === 'ON_HOLD').length, color: 'bg-red-400' },
   ];
 
   return (
@@ -185,7 +208,7 @@ export default function DashboardPage() {
                 }}
               />
               <div className="absolute inset-4 bg-white rounded-full flex flex-col items-center justify-center shadow-inner">
-                <span className="text-2xl font-black text-slate-900">{projectsCount || 14}</span>
+                <span className="text-2xl font-black text-slate-900">{projects.length || 0}</span>
                 <span className="text-[10px] font-bold text-slate-400 uppercase">Projects</span>
               </div>
             </div>
@@ -215,36 +238,43 @@ export default function DashboardPage() {
             <button className="text-sm font-semibold text-blue-600 hover:underline">View All</button>
           </CardHeader>
           <CardContent>
-            <div className="space-y-5">
-              {[
-                { name: 'Skyline Residential Tower', manager: 'Sarah J.', progress: 65, health: 'Stable', budget: '$1.2M' },
-                { name: 'Quantum ERP Migration', manager: 'David C.', progress: 24, health: 'Planning', budget: '$850K' },
-                { name: 'Bridge Rehabilitation', manager: 'Emma W.', progress: 42, health: 'Stable', budget: '$2.1M' },
-                { name: 'Smart Grid Pilot', manager: 'Felix A.', progress: 88, health: 'Delivering', budget: '$420K' },
-              ].map((project, i) => (
-                <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs">
-                      {project.name.charAt(0)}
+            {isLoading ? (
+              <div className="flex flex-col items-center justify-center py-10 text-slate-400">
+                <Loader2 className="h-8 w-8 animate-spin mb-4" />
+                <p>Analyzing project performance...</p>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-10 text-slate-400">
+                <FolderGit2 className="h-10 w-10 mx-auto mb-2 opacity-20" />
+                <p>No active projects to display.</p>
+              </div>
+            ) : (
+              <div className="space-y-5">
+                {projects.slice(0, 4).map((project, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-2xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100 group">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600 font-bold text-xs uppercase">
+                        {project.name.charAt(0)}
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
+                        <p className="text-xs text-slate-500">PM: {project.managerName || 'Sarah J.'}</p>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{project.name}</h4>
-                      <p className="text-xs text-slate-500">PM: {project.manager}</p>
+                    <div className="hidden sm:block w-32">
+                      <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                        <div className="h-full bg-blue-600 rounded-full" style={{ width: `${project.progress || 0}%` }} />
+                      </div>
+                      <p className="text-[10px] font-bold text-slate-400 mt-1">{project.progress || 0}% Complete</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-slate-900">${((project.budget || 0) / 1000).toFixed(0)}K</p>
+                      <Badge variant="outline" className="text-[10px] mt-1 h-5 uppercase">{project.status.replace('_', ' ')}</Badge>
                     </div>
                   </div>
-                  <div className="hidden sm:block w-32">
-                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
-                      <div className="h-full bg-blue-600 rounded-full" style={{ width: `${project.progress}%` }} />
-                    </div>
-                    <p className="text-[10px] font-bold text-slate-400 mt-1">{project.progress}% Complete</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900">{project.budget}</p>
-                    <Badge variant="outline" className="text-[10px] mt-1 h-5">{project.health}</Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -256,25 +286,30 @@ export default function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6 relative before:absolute before:inset-0 before:left-4 before:w-0.5 before:bg-slate-100 before:z-0">
-              {[
-                { type: 'Task', title: 'Foundation design approved', project: 'Skyline Tower', time: '2h ago', icon: CheckSquare, color: 'text-green-600', bg: 'bg-green-100' },
-                { type: 'Risk', title: 'Materials delay identified', project: 'Bridge Rehab', time: '4h ago', icon: AlertCircle, color: 'text-red-600', bg: 'bg-red-100' },
-                { type: 'Team', title: 'Sarah J. joined the board', project: 'Global Finance', time: '1d ago', icon: Users, color: 'text-blue-600', bg: 'bg-blue-100' },
-                { type: 'Milestone', title: 'Phase 1 successfully closed', project: 'Smart Grid', time: '2d ago', icon: TrendingUp, color: 'text-purple-600', bg: 'bg-purple-100' },
-              ].map((item, i) => (
-                <div key={i} className="flex gap-4 relative z-10">
-                  <div className={`h-8 w-8 rounded-full ${item.bg} flex items-center justify-center shrink-0 shadow-sm border-2 border-white`}>
-                    <item.icon className={`h-4 w-4 ${item.color}`} />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h5 className="text-sm font-bold text-slate-900">{item.title}</h5>
-                      <span className="text-[10px] text-slate-400 whitespace-nowrap">{item.time}</span>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{item.project} • {item.type}</p>
-                  </div>
+              {isLoading ? (
+                <div className="py-10 text-center text-slate-400">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto" />
                 </div>
-              ))}
+              ) : intelligence.length === 0 ? (
+                <div className="py-10 text-center text-xs text-slate-400 italic">
+                  No recent activities recorded.
+                </div>
+              ) : (
+                intelligence.map((item, i) => (
+                  <div key={i} className="flex gap-4 relative z-10">
+                    <div className={`h-8 w-8 rounded-full ${item.bg} flex items-center justify-center shrink-0 shadow-sm border-2 border-white`}>
+                      <item.icon className={`h-4 w-4 ${item.color}`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h5 className="text-sm font-bold text-slate-900 truncate max-w-[140px]">{item.title}</h5>
+                        <span className="text-[10px] text-slate-400 whitespace-nowrap">{item.time}</span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5 truncate max-w-[180px]">{item.project} • {item.type}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <button className="w-full mt-8 py-2.5 text-xs font-bold text-slate-500 hover:text-slate-900 transition-colors uppercase tracking-widest border border-slate-100 rounded-xl hover:bg-slate-50">
               Audit Full Stream

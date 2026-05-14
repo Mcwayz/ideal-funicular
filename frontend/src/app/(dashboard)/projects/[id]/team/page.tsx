@@ -11,8 +11,11 @@ import {
   MoreHorizontal, 
   Plus,
   Shield,
-  UserCheck
+  UserCheck,
+  Loader2,
+  Users
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 const teamMembers = [
   { 
@@ -62,13 +65,31 @@ export default function ProjectTeamPage({
 }: { 
   params: Promise<{ id: string }> 
 }) {
-  const params = use(paramsPromise);
+  const params = React.use(paramsPromise);
+  const [members, setMembers] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadTeam = async () => {
+      try {
+        const data = await api.users.listByProject(params.id);
+        setMembers(data);
+      } catch (error) {
+        console.error("Failed to load team members:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadTeam();
+  }, [params.id]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
+      case 'Online':
       case 'Active': return 'bg-green-100 text-green-700';
       case 'In Meeting': return 'bg-blue-100 text-blue-700';
-      case 'Away': return 'bg-orange-100 text-orange-700';
+      case 'Away':
+      case 'Offline': return 'bg-orange-100 text-orange-700';
       default: return 'bg-slate-100 text-slate-700';
     }
   };
@@ -87,65 +108,81 @@ export default function ProjectTeamPage({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-        {teamMembers.map((member) => (
-          <Card key={member.id} className="border-slate-200 shadow-sm hover:shadow-md transition-all group">
-            <CardHeader className="pb-4">
-              <div className="flex items-start justify-between">
-                <div className="relative">
-                  <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-slate-100 group-hover:border-blue-200 transition-colors">
-                    <img src={member.avatar} alt={member.name} className="h-full w-full object-cover" />
+        {isLoading ? (
+          <div className="col-span-full py-20 text-center text-slate-400">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p>Gathering team intelligence...</p>
+          </div>
+        ) : members.length === 0 ? (
+          <div className="col-span-full py-20 text-center text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+            <Users className="h-12 w-12 mx-auto mb-4 opacity-20" />
+            <p>No team members assigned to this project.</p>
+          </div>
+        ) : (
+          members.map((member) => (
+            <Card key={member.id} className="border-slate-200 shadow-sm hover:shadow-md transition-all group">
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between">
+                  <div className="relative">
+                    <div className="h-16 w-16 rounded-2xl overflow-hidden border-2 border-slate-100 group-hover:border-blue-200 transition-colors">
+                      <img 
+                        src={member.avatarUrl || `https://api.dicebear.com/7.x/avataaars/svg?seed=${member.firstName}`} 
+                        alt={`${member.firstName} ${member.lastName}`} 
+                        className="h-full w-full object-cover" 
+                      />
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${
+                      member.status === 'Online' || member.status === 'Active' ? 'bg-green-500' : 
+                      member.status === 'In Meeting' ? 'bg-blue-500' : 'bg-slate-300'
+                    }`} />
                   </div>
-                  <div className={`absolute -bottom-1 -right-1 h-4 w-4 rounded-full border-2 border-white ${
-                    member.status === 'Active' ? 'bg-green-500' : 
-                    member.status === 'In Meeting' ? 'bg-blue-500' : 'bg-orange-500'
-                  }`} />
-                </div>
-                <div className="flex gap-2">
-                  {member.isAdmin && (
-                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
-                      <Shield className="h-3 w-3 mr-1" />
-                      Admin
-                    </Badge>
-                  )}
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
-              </div>
-              <div className="mt-4">
-                <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
-                  {member.name}
-                </h3>
-                <p className="text-sm font-medium text-slate-500">{member.role}</p>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Mail className="h-4 w-4 text-slate-400" />
-                    {member.email}
-                  </div>
-                  <div className="flex items-center gap-3 text-sm text-slate-600">
-                    <Phone className="h-4 w-4 text-slate-400" />
-                    {member.phone}
+                  <div className="flex gap-2">
+                    {member.role === 'ADMIN' && (
+                      <Badge variant="secondary" className="bg-amber-50 text-amber-700 border-amber-200">
+                        <Shield className="h-3 w-3 mr-1" />
+                        Admin
+                      </Badge>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
                   </div>
                 </div>
+                <div className="mt-4">
+                  <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">
+                    {member.firstName} {member.lastName}
+                  </h3>
+                  <p className="text-sm font-medium text-slate-500">{member.role || 'Member'}</p>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Mail className="h-4 w-4 text-slate-400" />
+                      {member.email || 'No email provided'}
+                    </div>
+                    <div className="flex items-center gap-3 text-sm text-slate-600">
+                      <Phone className="h-4 w-4 text-slate-400" />
+                      {member.phone || 'No phone recorded'}
+                    </div>
+                  </div>
 
-                <div className="flex gap-2 pt-2 border-t border-slate-50">
-                  <Button variant="outline" className="flex-1 h-9 text-xs border-slate-200">
-                    <MessageSquare className="h-3 w-3 mr-2" />
-                    Message
-                  </Button>
-                  <Button variant="outline" className="flex-1 h-9 text-xs border-slate-200">
-                    <UserCheck className="h-3 w-3 mr-2" />
-                    Profile
-                  </Button>
+                  <div className="flex gap-2 pt-2 border-t border-slate-50">
+                    <Button variant="outline" className="flex-1 h-9 text-xs border-slate-200">
+                      <MessageSquare className="h-3 w-3 mr-2" />
+                      Message
+                    </Button>
+                    <Button variant="outline" className="flex-1 h-9 text-xs border-slate-200">
+                      <UserCheck className="h-3 w-3 mr-2" />
+                      Profile
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          ))
+        )}
 
         {/* Add Member Card */}
         <button className="border-2 border-dashed border-slate-200 rounded-xl p-8 flex flex-col items-center justify-center gap-3 hover:border-blue-300 hover:bg-blue-50/50 transition-all group">

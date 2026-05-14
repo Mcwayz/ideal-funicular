@@ -14,8 +14,11 @@ import {
   ShieldAlert,
   Clock,
   ExternalLink,
-  MoreHorizontal
+  MoreHorizontal,
+  Loader2,
+  Users
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 const risks = [
   { 
@@ -61,14 +64,42 @@ const risks = [
 ];
 
 export default function RisksPage() {
-  const getImpactColor = (impact: string) => {
-    switch (impact) {
+  const [risks, setRisks] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadRisks = async () => {
+      try {
+        const data = await api.risks.list();
+        setRisks(data);
+      } catch (error) {
+        console.error("Failed to load risks:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadRisks();
+  }, []);
+
+  const getImpactColor = (impact: any) => {
+    const impactStr = typeof impact === 'number' ? 
+      (impact >= 4 ? 'CRITICAL' : impact === 3 ? 'HIGH' : impact === 2 ? 'MEDIUM' : 'LOW') : 
+      impact;
+
+    switch (impactStr) {
       case 'CRITICAL': return 'bg-red-100 text-red-700 border-red-200';
       case 'HIGH': return 'bg-orange-100 text-orange-700 border-orange-200';
       case 'MEDIUM': return 'bg-amber-100 text-amber-700 border-amber-200';
       case 'LOW': return 'bg-blue-100 text-blue-700 border-blue-200';
       default: return 'bg-slate-100 text-slate-700 border-slate-200';
     }
+  };
+
+  const getProbabilityLabel = (prob: any) => {
+    if (typeof prob === 'number') {
+      return prob >= 4 ? 'HIGH' : prob === 3 ? 'MEDIUM' : 'LOW';
+    }
+    return prob;
   };
 
   return (
@@ -100,7 +131,9 @@ export default function RisksPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-red-600/70 uppercase tracking-wider">Critical Risks</p>
-                <p className="text-3xl font-black text-red-700">2</p>
+                <p className="text-3xl font-black text-red-700">
+                  {risks.filter(r => (typeof r.impact === 'number' ? r.impact >= 4 : r.impact === 'CRITICAL')).length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -113,7 +146,9 @@ export default function RisksPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-orange-600/70 uppercase tracking-wider">Active Risks</p>
-                <p className="text-3xl font-black text-orange-700">8</p>
+                <p className="text-3xl font-black text-orange-700">
+                  {risks.filter(r => r.status === 'ACTIVE' || r.status === 'OPEN').length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -126,7 +161,9 @@ export default function RisksPage() {
               </div>
               <div>
                 <p className="text-sm font-semibold text-green-600/70 uppercase tracking-wider">Mitigated</p>
-                <p className="text-3xl font-black text-green-700">14</p>
+                <p className="text-3xl font-black text-green-700">
+                  {risks.filter(r => r.status === 'MITIGATED' || r.status === 'CLOSED').length}
+                </p>
               </div>
             </div>
           </CardContent>
@@ -147,7 +184,18 @@ export default function RisksPage() {
           </div>
         </CardHeader>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+              <Loader2 className="h-8 w-8 animate-spin mb-4" />
+              <p>Synchronizing risk intelligence...</p>
+            </div>
+          ) : risks.length === 0 ? (
+            <div className="text-center py-20 text-slate-400">
+              <AlertTriangle className="h-12 w-12 mx-auto mb-4 opacity-20" />
+              <p>No risks currently registered.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="bg-slate-50/50 text-slate-500 uppercase text-[10px] font-bold tracking-widest border-b border-slate-100">
@@ -169,39 +217,39 @@ export default function RisksPage() {
                           {risk.title}
                         </span>
                         <span className="text-xs text-slate-400 mt-0.5 truncate max-w-xs italic">
-                          {risk.mitigation}
+                          {risk.mitigationPlan || risk.mitigation || "No mitigation plan recorded."}
                         </span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <Badge variant="outline" className="bg-white text-slate-500 font-medium border-slate-200">
-                          {risk.project}
+                          {risk.projectName || risk.project?.name || "Global"}
                         </Badge>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <Badge className={`font-bold text-[10px] ${getImpactColor(risk.impact)}`}>
-                        {risk.impact}
+                        {typeof risk.impact === 'number' ? (risk.impact >= 4 ? 'CRITICAL' : risk.impact === 3 ? 'HIGH' : 'MEDIUM') : risk.impact}
                       </Badge>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 w-16 bg-slate-100 rounded-full overflow-hidden">
                           <div className={`h-full rounded-full ${
-                            risk.probability === 'HIGH' ? 'bg-orange-500' : 
-                            risk.probability === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-400'
-                          }`} style={{ width: risk.probability === 'HIGH' ? '90%' : risk.probability === 'MEDIUM' ? '50%' : '20%' }} />
+                            getProbabilityLabel(risk.probability) === 'HIGH' ? 'bg-orange-500' : 
+                            getProbabilityLabel(risk.probability) === 'MEDIUM' ? 'bg-blue-500' : 'bg-slate-400'
+                          }`} style={{ width: getProbabilityLabel(risk.probability) === 'HIGH' ? '90%' : getProbabilityLabel(risk.probability) === 'MEDIUM' ? '50%' : '20%' }} />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-500 uppercase">{risk.probability}</span>
+                        <span className="text-[10px] font-bold text-slate-500 uppercase">{getProbabilityLabel(risk.probability)}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-full bg-slate-200 border border-white shadow-sm flex items-center justify-center text-[10px] font-bold text-slate-600">
-                          {risk.owner.split(' ').map(n => n[0]).join('')}
+                          {(risk.ownerName || risk.owner)?.split(' ').map((n: string) => n[0]).join('') || '?'}
                         </div>
-                        <span className="text-sm text-slate-600">{risk.owner}</span>
+                        <span className="text-sm text-slate-600">{risk.ownerName || risk.owner || 'Unassigned'}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -221,6 +269,7 @@ export default function RisksPage() {
               </tbody>
             </table>
           </div>
+        )}
         </CardContent>
       </Card>
     </div>

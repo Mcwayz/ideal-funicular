@@ -18,8 +18,12 @@ import {
   Grid,
   List as ListIcon,
   Clock,
-  HardDrive
+  HardDrive,
+  Loader2,
+  Users,
+  Star
 } from 'lucide-react';
+import { api } from '@/lib/api';
 
 const documents = [
   { id: '1', name: 'Site_Plan_Revision_B.pdf', type: 'PDF', size: '12.4 MB', project: 'Skyline Tower', modified: '2h ago', owner: 'Sarah J.', category: 'Architecture' },
@@ -31,8 +35,26 @@ const documents = [
 ];
 
 export default function DocumentsPage() {
+  const [documents, setDocuments] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const loadDocuments = async () => {
+      try {
+        const data = await api.documents.list();
+        setDocuments(data);
+      } catch (error) {
+        console.error("Failed to load documents:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadDocuments();
+  }, []);
+
   const getFileIcon = (type: string) => {
-    switch (type) {
+    const typeUpper = type?.toUpperCase();
+    switch (typeUpper) {
       case 'PDF': return <FileText className="h-8 w-8 text-red-500" />;
       case 'DOCX': return <File className="h-8 w-8 text-blue-500" />;
       case 'XLSX': return <FileCode className="h-8 w-8 text-green-500" />;
@@ -40,6 +62,12 @@ export default function DocumentsPage() {
       case 'FIG': return <ImageIcon className="h-8 w-8 text-pink-500" />;
       default: return <FileArchive className="h-8 w-8 text-slate-400" />;
     }
+  };
+
+  const formatFileSize = (size: number) => {
+    if (!size) return '0 KB';
+    if (size > 1024 * 1024) return `${(size / (1024 * 1024)).toFixed(1)} MB`;
+    return `${(size / 1024).toFixed(0)} KB`;
   };
 
   return (
@@ -68,8 +96,8 @@ export default function DocumentsPage() {
           </CardHeader>
           <CardContent className="space-y-1">
             {[
-              { name: 'All Files', count: 124, icon: HardDrive, active: true },
-              { name: 'Recent', count: 12, icon: Clock, active: false },
+              { name: 'All Files', count: documents.length, icon: HardDrive, active: true },
+              { name: 'Recent', count: documents.filter(d => new Date(d.createdAt).getTime() > Date.now() - 86400000).length, icon: Clock, active: false },
               { name: 'Shared with me', count: 45, icon: Users, active: false },
               { name: 'Starred', count: 8, icon: Star, active: false },
             ].map(item => (
@@ -118,39 +146,53 @@ export default function DocumentsPage() {
           </Card>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {documents.map((doc) => (
-              <Card key={doc.id} className="group border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
-                <CardContent className="p-5">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
-                      {getFileIcon(doc.type)}
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors" title={doc.name}>
-                      {doc.name}
-                    </h3>
-                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                      {doc.size} • {doc.type}
-                    </p>
-                  </div>
-                  <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-50">
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
-                        {doc.owner.split(' ').map(n => n[0]).join('')}
+            {isLoading ? (
+              <div className="col-span-full py-20 text-center text-slate-400">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                <p>Retrieving documents...</p>
+              </div>
+            ) : documents.length === 0 ? (
+              <div className="col-span-full py-20 text-center text-slate-400 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                <FileArchive className="h-12 w-12 mx-auto mb-4 opacity-20" />
+                <p>No documents found in the center.</p>
+              </div>
+            ) : (
+              documents.map((doc) => (
+                <Card key={doc.id} className="group border-slate-200 shadow-sm hover:shadow-md transition-all hover:border-blue-300">
+                  <CardContent className="p-5">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
+                        {getFileIcon(doc.fileType)}
                       </div>
-                      <span className="text-[10px] font-medium text-slate-500">{doc.modified}</span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50">
-                      <Download className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    <div>
+                      <h3 className="font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors" title={doc.name}>
+                        {doc.name}
+                      </h3>
+                      <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">
+                        {formatFileSize(doc.fileSize)} • {doc.fileType || 'File'}
+                      </p>
+                    </div>
+                    <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-50">
+                      <div className="flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-400">
+                          {(doc.uploadedByName || doc.owner)?.split(' ').map((n: string) => n[0]).join('') || '?'}
+                        </div>
+                        <span className="text-[10px] font-medium text-slate-500">
+                          {new Date(doc.createdAt).toLocaleDateString()}
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-600 hover:bg-blue-50">
+                        <Download className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>
@@ -158,6 +200,3 @@ export default function DocumentsPage() {
   );
 }
 
-// Mock components to avoid missing imports in this demo environment
-const Star = ({ className }: { className?: string }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>;
-const Users = ({ className }: { className?: string }) => <svg className={className} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>;

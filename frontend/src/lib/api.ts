@@ -38,6 +38,18 @@ export const api = {
     listByProject: (projectId: string) => fetchApi(`/tasks/project/${projectId}`),
     create: (projectId: string, data: any) => fetchApi(`/tasks/project/${projectId}`, { method: 'POST', body: JSON.stringify(data) }),
   },
+  risks: {
+    list: () => fetchApi('/risks'),
+    listByProject: (projectId: string) => fetchApi(`/risks/project/${projectId}`),
+  },
+  documents: {
+    list: () => fetchApi('/documents'),
+    listByProject: (projectId: string) => fetchApi(`/documents/project/${projectId}`),
+  },
+  users: {
+    list: () => fetchApi('/users'),
+    listByProject: (projectId: string) => fetchApi(`/users/project/${projectId}`),
+  },
   auth: {
     login: (data: any) => fetchApi('/auth/login', { method: 'POST', body: JSON.stringify(data) }),
   },
