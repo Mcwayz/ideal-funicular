@@ -69,14 +69,18 @@ export default function DashboardLayout({
         </div>
 
         <div className="p-4 border-t border-slate-800">
-          <button className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
-            <Settings className="h-5 w-5" />
-            <span className="text-sm font-medium">Settings</span>
-          </button>
-          <button className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-slate-300 hover:bg-slate-800 hover:text-red-400 transition-colors mt-1">
-            <LogOut className="h-5 w-5" />
-            <span className="text-sm font-medium">Log out</span>
-          </button>
+          <Link href="/settings">
+            <button className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-slate-300 hover:bg-slate-800 hover:text-white transition-colors">
+              <Settings className="h-5 w-5" />
+              <span className="text-sm font-medium">Settings</span>
+            </button>
+          </Link>
+          <Link href="/login">
+            <button className="flex items-center gap-3 px-3 py-2 w-full rounded-md text-slate-300 hover:bg-slate-800 hover:text-red-400 transition-colors mt-1">
+              <LogOut className="h-5 w-5" />
+              <span className="text-sm font-medium">Log out</span>
+            </button>
+          </Link>
         </div>
       </div>
 
