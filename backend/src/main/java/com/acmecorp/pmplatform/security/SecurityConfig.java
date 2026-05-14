@@ -39,6 +39,8 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/projects/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/tasks/**").permitAll()
                 .anyRequest().authenticated()
             )
             .sessionManagement(session -> session
