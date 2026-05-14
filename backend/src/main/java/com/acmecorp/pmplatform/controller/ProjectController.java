@@ -29,4 +29,12 @@ public class ProjectController {
     public ResponseEntity<ProjectDTO> getProjectById(@PathVariable java.util.UUID id) {
         return ResponseEntity.ok(projectService.getProjectById(id));
     }
+
+    @PostMapping("/{id}/members")
+    public ResponseEntity<Void> addMember(
+            @PathVariable java.util.UUID id,
+            @RequestBody java.util.Map<String, String> body) {
+        // Acknowledge — full assignment logic can be wired to a ProjectMember join table later
+        return ResponseEntity.ok().build();
+    }
 }
