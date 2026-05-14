@@ -121,9 +121,9 @@ export default function TasksPage() {
                       <div className="flex items-center justify-between pt-2 border-t border-slate-50">
                         <div className="flex items-center gap-2 text-slate-400">
                           <div className="h-6 w-6 rounded-full bg-slate-200 flex items-center justify-center text-[10px] font-bold">
-                            {task.assignee.split(' ').map(n => n[0]).join('')}
+                            {task.assignee?.split(' ').map((n: string) => n[0]).join('') || '?'}
                           </div>
-                          <span className="text-xs">{task.assignee}</span>
+                          <span className="text-xs">{task.assignee || 'Unassigned'}</span>
                         </div>
                         <div className="flex items-center gap-1 text-slate-400 text-xs">
                           <Calendar className="h-3 w-3" />
