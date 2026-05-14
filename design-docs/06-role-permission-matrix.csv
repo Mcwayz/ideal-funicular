@@ -1,0 +1,20 @@
+Permission,Super Admin,Org Admin,Project Manager,Team Lead,Developer/Engineer,QA Engineer,Finance Officer,Client/Stakeholder,Viewer
+CREATE_PROJECT,Yes,Yes,Yes,No,No,No,No,No,No
+EDIT_PROJECT,Yes,Yes,Yes,No,No,No,No,No,No
+DELETE_PROJECT,Yes,Yes,No,No,No,No,No,No,No
+VIEW_PROJECT,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes
+CREATE_TASK,Yes,Yes,Yes,Yes,Yes,Yes,No,No,No
+EDIT_TASK,Yes,Yes,Yes,Yes,Yes,Yes,No,No,No
+ASSIGN_TASK,Yes,Yes,Yes,Yes,No,No,No,No,No
+DELETE_TASK,Yes,Yes,Yes,No,No,No,No,No,No
+UPDATE_TASK_STATUS,Yes,Yes,Yes,Yes,Yes,Yes,No,No,No
+LOG_TIME,Yes,Yes,Yes,Yes,Yes,Yes,No,No,No
+APPROVE_TIME,Yes,Yes,Yes,Yes,No,No,No,No,No
+VIEW_BUDGET,Yes,Yes,Yes,No,No,No,Yes,No,No
+EDIT_BUDGET,Yes,Yes,No,No,No,No,Yes,No,No
+MANAGE_USERS,Yes,Yes,No,No,No,No,No,No,No
+UPLOAD_DOCUMENT,Yes,Yes,Yes,Yes,Yes,Yes,Yes,Yes,No
+DELETE_DOCUMENT,Yes,Yes,Yes,No,No,No,No,No,No
+APPROVE_DOCUMENT,Yes,Yes,Yes,Yes,No,No,No,Yes,No
+VIEW_REPORTS,Yes,Yes,Yes,Yes,No,No,Yes,Yes,No
+MANAGE_RISKS,Yes,Yes,Yes,Yes,No,No,No,No,No

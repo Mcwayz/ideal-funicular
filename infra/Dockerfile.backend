@@ -1,0 +1,17 @@
+# Build stage
+FROM maven:3.9-amazoncorretto-17 AS build
+WORKDIR /app
+# COPY pom.xml .
+# COPY src ./src
+# RUN mvn clean package -DskipTests
+
+# Note: This is a placeholder since the backend code doesn't exist yet.
+# In a real scenario, uncomment the above lines.
+RUN echo "Mock build" > /app/app.jar
+
+# Run stage
+FROM amazoncorretto:17-alpine-jdk
+WORKDIR /app
+COPY --from=build /app/app.jar /app/app.jar
+EXPOSE 8080
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

@@ -1,0 +1,58 @@
+# --- General ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+*.log
+*.tmp
+*.bak
+.vscode/
+.idea/
+*.swp
+
+# --- Backend (Maven/Java) ---
+backend/target/
+backend/*.jar
+backend/*.war
+backend/*.ear
+backend/.classpath
+backend/.project
+backend/.settings/
+backend/bin/
+backend/.factorypath
+backend/HELP.md
+
+# --- Frontend (Node.js/Next.js) ---
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/.env
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/.pnp*
+frontend/.pnp.js
+
+# --- AI Service (Python) ---
+ai-service/__pycache__/
+ai-service/*.py[cod]
+ai-service/*$py.class
+ai-service/.pytest_cache/
+ai-service/.venv/
+ai-service/venv/
+ai-service/env/
+ai-service/.env
+ai-service/.coverage
+ai-service/htmlcov/
+ai-service/.mypy_cache/
+
+# --- Infrastructure & Containers ---
+.env
+infra/.env
+*.db
+docker-compose.override.yml

@@ -1,0 +1,130 @@
+# Kubernetes Manifests for Project Management Platform
+
+---
+# Backend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm-backend
+  labels:
+    app: pm-backend
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: pm-backend
+  template:
+    metadata:
+      labels:
+        app: pm-backend
+    spec:
+      containers:
+      - name: pm-backend
+        image: acmecorp/pm-backend:latest
+        ports:
+        - containerPort: 8080
+        env:
+        - name: SPRING_DATASOURCE_URL
+          valueFrom:
+            secretKeyRef:
+              name: db-credentials
+              key: url
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+---
+# Backend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pm-backend-svc
+spec:
+  selector:
+    app: pm-backend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+
+---
+# Frontend Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pm-frontend
+  labels:
+    app: pm-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: pm-frontend
+  template:
+    metadata:
+      labels:
+        app: pm-frontend
+    spec:
+      containers:
+      - name: pm-frontend
+        image: acmecorp/pm-frontend:latest
+        ports:
+        - containerPort: 3000
+        env:
+        - name: NEXT_PUBLIC_API_URL
+          value: "https://api.pm-platform.com/v1"
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+
+---
+# Frontend Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: pm-frontend-svc
+spec:
+  selector:
+    app: pm-frontend
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 3000
+
+---
+# Ingress (AWS ALB Example)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: pm-ingress
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+spec:
+  rules:
+  - host: app.pm-platform.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pm-frontend-svc
+            port:
+              number: 80
+  - host: api.pm-platform.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: pm-backend-svc
+            port:
+              number: 80
